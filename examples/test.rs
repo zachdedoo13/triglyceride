@@ -1,4 +1,4 @@
-use triglyceride::{init_profiler, profile_event_mac, Settings, open_profiler};
+use triglyceride::{init_profiler, time_event_mac, Settings, open_profiler};
 
 init_profiler!(PROF, Settings::default());
 
@@ -9,8 +9,8 @@ fn main() {
 
 
    loop {
-      profile_event_mac!(PROF, "YEENS", {
-         profile_event_mac!(PROF, "T1", {
+      time_event_mac!(PROF, "YEENS", {
+         time_event_mac!(PROF, "T1", {
             std::thread::sleep(std::time::Duration::from_millis(70));
             test();
          });
@@ -18,7 +18,7 @@ fn main() {
 
 
 
-      profile_event_mac!(PROF, "DISCONNECTED", {
+      time_event_mac!(PROF, "DISCONNECTED", {
          std::thread::sleep(std::time::Duration::from_millis(30));
       });
 

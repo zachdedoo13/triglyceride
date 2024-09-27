@@ -1,9 +1,10 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
-use eframe::emath::Align;
-use egui::{Layout, Stroke, TextStyle};
+
+use egui::{Context, Stroke, TextStyle, Window};
 use egui::{CollapsingHeader, Color32, DragValue, menu, ScrollArea, Ui};
 use egui_plot::{Bar, BarChart, Corner, Legend, Line, Plot, PlotPoint};
-use rand::{Rng, SeedableRng};
+use lazy_static::lazy_static;
+use rand::{random, Rng, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
 
 use crate::profiler::PerformanceProfiler;
@@ -19,6 +20,7 @@ pub struct UiData {
    pub tree_or_list: bool,
    pub graph_included_upper_ms: f64,
    pub graph_included_upper_fps: f64,
+   pub zoom_graph: bool,
 }
 impl Default for UiData {
    fn default() -> Self {
@@ -28,6 +30,7 @@ impl Default for UiData {
          tree_or_list: true,
          graph_included_upper_ms: 0.0,
          graph_included_upper_fps: 0.0,
+         zoom_graph: false,
       }
    }
 }
@@ -49,9 +52,8 @@ impl PerformanceProfiler {
                ui.add(DragValue::new(&mut settings.update_interval_sec).speed(0.01).range(0.0..=f32::MAX).prefix("Data Update Interval -> ").suffix(" sec"));
                ui.add(DragValue::new(&mut settings.stored_cash_amount).speed(0.1).range(1..=200).prefix("Data averaging cash -> "));
                ui.add(DragValue::new(&mut settings.stored_data_amount).speed(0.5).range(1..=u32::MAX).prefix("stored datapoint's for graph -> "));
-
-
                ui.add(DragValue::new(&mut self.ui_data.graph_included_upper_ms).speed(1.0).range(0.0..=f64::MAX).prefix("Included upper milliseconds -> "));
+               ui.add(DragValue::new(&mut settings.smoothing_amount).speed(0.1).range(0..=u32::MAX).prefix("Tree smoothing amount -> "));
             });
 
             if ui.button("Clear").clicked() {
@@ -61,6 +63,11 @@ impl PerformanceProfiler {
             ui.menu_button("Help", |ui| {
                ui.label("Imagine some helpfully words")
             });
+
+            ui.horizontal(|ui| {
+               ui.add(ToggleSwitch::new(&mut self.ui_data.zoom_graph));
+               ui.label("Zoom Graph")
+            })
          });
       });
    }
@@ -87,14 +94,20 @@ impl PerformanceProfiler {
             ui.group(|ui| {
                self.display_graph_of_selected(ui);
             });
-
          });
 
          ui.group(|ui| {
             self.tree_bar_chart(ui);
          });
-
       });
+   }
+
+   pub fn display_floating_window(&mut self, ctx: &Context) {
+      Window::new("Stats")
+          .resizable(true)
+          .show(ctx, |ui| {
+             self.handy_performance_benchmarking_ui_section_with_cool_looking_graphs_and_knobs_and_things_and_stuff_looks_very_cool(ui);
+          });
    }
 }
 
@@ -153,7 +166,22 @@ impl PerformanceProfiler {
 /// tree
 impl PerformanceProfiler {
    fn pull_data(&self, node: StatString) -> f64 {
-      self.all_profiles.get(node).unwrap().pull_latest()
+      if self.settings.smoothing_amount <= 1 {
+         self.all_profiles.get(node).unwrap().pull_latest()
+      } else {
+         let timeings = &self.all_profiles.get(node).unwrap().timings;
+         let mut c = 0;
+         let mut tot = 0.0;
+         'iter: for i in 0..self.settings.smoothing_amount {
+            if let Some(d) = timeings.get(((timeings.len() - i as usize) as i32 - 1) as usize) {
+               c += 1;
+               tot += d[1];
+            } else { break 'iter; }
+         }
+         
+         tot / c as f64
+      }
+      
    }
 
    fn recursive_tree(
@@ -201,11 +229,10 @@ impl PerformanceProfiler {
 
       let plot = Plot::new("FunctionTree")
           .show_grid([false, false])
-          .show_axes([false, false])
+          .show_axes([true, false])
           .allow_scroll(false)
           .allow_boxed_zoom(false)
-          .allow_drag(false)
-          .x_axis_label("Function tree");
+          .allow_drag(false);
 
       let barchart = BarChart::new(bars.0.clone());
       plot.show(ui, |plot_ui| {
@@ -244,6 +271,7 @@ impl PerformanceProfiler {
          for focused_profile in self.ui_data.focused_profiles.iter_mut() {
             let array = &self.all_profiles.get(focused_profile).unwrap().timings;
             let line = Line::new(array.clone())
+                .color(rand_color(focused_profile))
                 .name(focused_profile);
             lines.push(line);
          }
@@ -251,31 +279,37 @@ impl PerformanceProfiler {
          if let Some(hovered) = self.ui_data.last_hovered_profile_tree {
             let array = &self.all_profiles.get(hovered).unwrap().timings;
             let line = Line::new(array.clone())
+                .stroke(Stroke::new(2.0, Color32::WHITE))
                 .name(hovered);
             lines.push(line);
          }
       }
 
-      Plot::new("Data plot")
-          .allow_drag(false)
+      let mut plot: Plot = Plot::new("Data plot")
           .allow_scroll(false)
           .allow_zoom(false)
           .allow_boxed_zoom(false)
-          .include_y(0.0)
-          .include_y(self.ui_data.graph_included_upper_ms)
+          .allow_drag(false)
           .legend(
              Legend::default()
                  .position(Corner::LeftBottom)
                  .text_style(TextStyle::Small)
           )
-             .show_axes([false, true])
-             .y_axis_label("Milliseconds")
-             .show(ui, |plot_ui| {
-                for line in lines {
-                   plot_ui.line(line);
-                }
-             },
-          );
+          .show_axes([false, true])
+          .y_axis_label("Milliseconds");
+
+      if !self.ui_data.zoom_graph {
+         plot = plot.include_y(0.0)
+             .include_y(self.ui_data.graph_included_upper_ms);
+      }
+
+
+      plot.show(ui, |plot_ui| {
+         for line in lines {
+            plot_ui.line(line);
+         }
+      },
+      );
    }
 }
 
@@ -322,10 +356,14 @@ fn bar_from_x_plus(x: f64, plus: f64, height: f64, name: StatString) -> Bar {
        )
 }
 
+lazy_static!(
+   static ref OFFSET: u64 = { let mut rng = thread_rng(); rng.gen_range(0..500) };
+);
+
 fn stat_hash(key: StatString) -> u64 {
    let mut hasher = DefaultHasher::new();
    key.hash(&mut hasher);
-   let hash = hasher.finish();
+   let hash = hasher.finish() + *OFFSET;
 
    hash
 }

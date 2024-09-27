@@ -58,21 +58,3 @@ impl Tree {
       self.root = None;
    }
 }
-
-pub fn print_tree(tree: &Tree) -> String {
-   if let Some(root) = tree.root {
-      return print_node(&tree, root, 0);
-   }
-   String::new()
-}
-
-fn print_node(tree: &Tree, node_name: &str, depth: usize) -> String {
-   let mut result = String::new();
-   if let Some(node) = tree.nodes.get(node_name) {
-      result.push_str(&format!("{}{}\n", "\t".repeat(depth), node.name));
-      for child in &node.children {
-         result.push_str(&print_node(tree, child, depth + 1));
-      }
-   }
-   result
-}

@@ -8,7 +8,6 @@ lazy_static!(
 #[derive(Debug)]
 pub struct FunctionProfile {
    st: f64,
-   counter: u32,
    max_stored_cash_amount: u32,
 
    average_cash: Vec<f64>,
@@ -21,7 +20,6 @@ impl Default for FunctionProfile {
    fn default() -> Self {
       Self {
          st: get_ct(),
-         counter: 0,
          max_stored_cash_amount: 10,
          average_cash: vec![],
          timings: vec![],
@@ -39,7 +37,7 @@ impl FunctionProfile {
          self.average_cash.push(get_ct() - self.st);
       }
    }
-   pub(crate) fn resolve(&mut self, stored_cash_amount: u32, stored_data_amount: u32, cull_first_average: bool) {
+   pub(crate) fn resolve(&mut self, stored_cash_amount: u32, stored_data_amount: u32, cull_first_average: bool, counter: u32) {
       self.max_stored_cash_amount = stored_cash_amount;
 
       if cull_first_average { self.average_cash.remove(0); }
@@ -47,14 +45,13 @@ impl FunctionProfile {
       let ave: f64 = self.average_cash.iter().sum::<f64>() / self.average_cash.len() as f64;
 
       self.timings.push(
-         [self.counter as f64, ave]
+         [counter as f64, ave]
       );
 
       let diff = self.timings.len() as i32 - stored_data_amount as i32;
       if diff > 0 { self.timings.drain(0..(diff as usize)); }
 
       self.average_cash.clear();
-      self.counter += 1;
    }
 
    /// pulls the latest elapsed time in ms from ``FunctionProfile::timings``
@@ -64,5 +61,5 @@ impl FunctionProfile {
 }
 
 fn get_ct() -> f64 {
-   unsafe { ST.elapsed().as_secs_f64() * 1000.0 }
+   ST.elapsed().as_secs_f64() * 1000.0
 }

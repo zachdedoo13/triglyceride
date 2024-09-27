@@ -3,7 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 
 use quote::quote;
-use syn::{Expr, Ident, ItemFn, LitStr, parse_macro_input};
+use syn::{Expr, ItemFn, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn time_event(attr: TokenStream, input: TokenStream) -> TokenStream {

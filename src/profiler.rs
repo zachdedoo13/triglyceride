@@ -13,15 +13,17 @@ pub struct Settings {
    pub stored_data_amount: u32,
    pub stored_cash_amount: u32,
    pub update_interval_sec: f64,
+   pub smoothing_amount: u32
 }
 
 impl Default for Settings {
    fn default() -> Self {
       Self {
          active: true,
-         stored_data_amount: 3,
-         stored_cash_amount: 2,
+         stored_data_amount: 50,
+         stored_cash_amount: 20,
          update_interval_sec: 0.5,
+         smoothing_amount: 5,
       }
    }
 }
@@ -51,7 +53,7 @@ pub struct PerformanceProfiler {
    pub(crate) processioning_tree: bool,
    pub(crate) active_tree: Tree,
    pub(crate) traverser: Vec<StatString>,
-
+   ticks_since_start: u32,
    ticks_since_last_dump: u32,
 
    inner_constant_reference: Option<StatString>,
@@ -76,6 +78,7 @@ impl PerformanceProfiler {
          active_tree: Default::default(),
          traverser: vec![],
 
+         ticks_since_start: 0,
          ticks_since_last_dump: 0,
          inner_constant_reference: None,
          outermost_upper: None,
@@ -126,6 +129,12 @@ impl PerformanceProfiler {
    fn at_outermost_upper(&mut self) {
       self.resolve_profiler(true);
 
+      // start processes if queued
+      if self.queue_processes_tree {
+         self.processioning_tree = true;
+         self.queue_processes_tree = false;
+      }
+
       let (upper, lower) = (self.outermost_upper.unwrap(), self.outermost_lower.unwrap());
 
       match self.inner_constant_reference {
@@ -140,7 +149,7 @@ impl PerformanceProfiler {
             } // invalid check
 
             // start tree
-            if self.queue_processes_tree {
+            if self.processioning_tree {
                self.latest_tree = std::mem::take(&mut self.active_tree);
                self.active_tree.clear();
                self.traverser.clear();
@@ -151,7 +160,7 @@ impl PerformanceProfiler {
          }
 
          Some(reference) => {
-            if self.queue_processes_tree {
+            if self.processioning_tree {
                self.latest_tree = std::mem::take(&mut self.active_tree);
                self.active_tree.clear();
                self.traverser.clear();
@@ -181,7 +190,7 @@ impl PerformanceProfiler {
 
             // not outermost loop
             else {
-               if self.queue_processes_tree {
+               if self.processioning_tree {
                   let parent = self.traverser.last().unwrap();
                   self.active_tree.add_child(parent, name);
                   self.traverser.push(name);
@@ -201,7 +210,7 @@ impl PerformanceProfiler {
       self.outermost_lower = Some(name);
 
       // function tree
-      if self.queue_processes_tree {
+      if self.processioning_tree {
          self.traverser.pop();
       }
    }
@@ -238,17 +247,25 @@ impl PerformanceProfiler {
    }
 
    fn inner_resolve(&mut self, queue_tree: bool) {
+      self.ticks_since_start += 1;
       self.ticks_since_last_dump += 1;
+      
       if (self.last_dump.elapsed().as_secs_f64() > self.settings.update_interval_sec) && self.ticks_since_last_dump > 3 {
          self.ticks_since_last_dump = 0;
          self.last_dump = Instant::now();
 
          for (name, profile) in self.all_profiles.iter_mut() {
-            if *name == self.inner_constant_reference.unwrap() {
-               profile.resolve(self.settings.stored_cash_amount, self.settings.stored_data_amount, true);
-            } else {
-               profile.resolve(self.settings.stored_cash_amount, self.settings.stored_data_amount, false);
+            match self.inner_constant_reference {
+               None => { profile.resolve(self.settings.stored_cash_amount, self.settings.stored_data_amount, false, self.ticks_since_start); }
+               Some(inner) => {
+                  if *name == inner {
+                     profile.resolve(self.settings.stored_cash_amount, self.settings.stored_data_amount, true, self.ticks_since_start);
+                  } else {
+                     profile.resolve(self.settings.stored_cash_amount, self.settings.stored_data_amount, false, self.ticks_since_start);
+                  }
+               }
             }
+            
          }
 
          self.queue_processes_tree = queue_tree;

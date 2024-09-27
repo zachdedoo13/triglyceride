@@ -1,6 +1,6 @@
 /// alternative to function macro
 #[macro_export]
-macro_rules! profile_event_mac {
+macro_rules! time_event_mac {
     ($profiler: ident, $name: literal, $code: block) => {
        triglyceride::open_profiler(&$profiler, |mut p| p.time_event_start($name));
 
