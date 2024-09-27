@@ -1,0 +1,17 @@
+[package]
+name = "tri_macros"
+version = "0.1.0"
+edition = "2021"
+description = "local crates are a pain in the ass"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2.0.77", features = ["full"] }
+quote = "1.0.37"
+
+
+[dev-dependencies]
+triglyceride = { path = "../../triglyceride" }

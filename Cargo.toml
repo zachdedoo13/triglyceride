@@ -1,0 +1,16 @@
+[package]
+name = "triglyceride"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
+lazy_static = "1.5.0"
+
+egui = { version = "0.28.1", features = [] }
+egui_plot = { version = "0.28.1", features = [] }
+eframe = { version = "0.28.1", features = [] }
+winit = { version = "0.29.15", features = [] }
+rand = "0.8.5"
+
+tri_macros = { path = "tri_macros" }
