@@ -3,7 +3,7 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use egui::{Context, Stroke, TextStyle, WidgetText, Window};
 use egui::{CollapsingHeader, Color32, DragValue, menu, ScrollArea, Ui};
 use egui_plot::{Bar, BarChart, Corner, Legend, Line, Plot, PlotPoint};
-use rand::{Rng, SeedableRng, thread_rng};
+use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 
 use crate::profiler::PerformanceProfiler;
@@ -391,7 +391,7 @@ fn stat_hash(key: StatString) -> u64 {
 
    hash += unsafe {
       if OFFSET == 0 {
-         let mut rng = thread_rng();
+         let mut rng = StdRng::seed_from_u64(hash);
          OFFSET = rng.gen_range(0..100_000);
       };
 
