@@ -1,6 +1,6 @@
 [package]
 name = "triglyceride"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A simple realtime event loop profiler with egui ui"
 repository = "https://github.com/zachdedoo13/triglyceride"
