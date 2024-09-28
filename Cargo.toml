@@ -5,6 +5,7 @@ edition = "2021"
 description = "A simple realtime event loop profiler with egui ui"
 repository = "https://github.com/zachdedoo13/triglyceride"
 documentation = "https://docs.rs/triglyceride"
+license = "MIT"
 
 [dependencies]
 instant = { version = "0.1.13", features = ["now", "wasm-bindgen"] }
