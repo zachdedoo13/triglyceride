@@ -2853,6 +2853,7 @@ dependencies = [
 [[package]]
 name = "tri_macros"
 version = "0.1.0"
+source = "git+https://github.com/zachdedoo13/triglyceride#a7e42e9197ceb608b151c6de16507d01aaae2372"
 dependencies = [
  "quote",
  "syn 2.0.77",
