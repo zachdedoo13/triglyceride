@@ -1,5 +1,4 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::ops::Add;
 
 use egui::{Context, Stroke, TextStyle, Window};
 use egui::{CollapsingHeader, Color32, DragValue, menu, ScrollArea, Ui};
