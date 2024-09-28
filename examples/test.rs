@@ -1,17 +1,20 @@
-use triglyceride::{init_profiler, time_event_mac, Settings, open_profiler};
+use triglyceride::{init_profiler, time_event_mac, Settings, open_profiler, change_profiler_settings};
 
 init_profiler!(PROF, Settings::default());
 
 
 fn main() {
    triglyceride::spawn_disconnected_window(&PROF);
-
+   
+   change_profiler_settings(&PROF, |s: &mut Settings| {
+      s.smoothing_amount = 3;
+   });
 
 
    loop {
       time_event_mac!(PROF, "YEENS", {
          time_event_mac!(PROF, "T1", {
-            std::thread::sleep(std::time::Duration::from_millis(70));
+            // std::thread::sleep(std::time::Duration::from_millis(70));
             test();
          });
       });
@@ -19,7 +22,7 @@ fn main() {
 
 
       time_event_mac!(PROF, "DISCONNECTED", {
-         std::thread::sleep(std::time::Duration::from_millis(30));
+         // std::thread::sleep(std::time::Duration::from_millis(30));
       });
 
       open_profiler(&PROF, |mut p| p.set_constant_reference("MAIN"));

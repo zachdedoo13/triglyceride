@@ -443,12 +443,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
+name = "bit-matrix"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9644ccac1e8d3556dff7f1f01bedc5589fe1dfa569485681ac48876b9b77c749"
+dependencies = [
+ "bit-vec 0.7.0",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0700ddab506f33b20a03b13996eccd309a48e5ff77d0d95926aa0210fb4e95f1"
 dependencies = [
- "bit-vec",
+ "bit-vec 0.6.3",
 ]
 
 [[package]]
@@ -456,6 +465,12 @@ name = "bit-vec"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
+name = "bit-vec"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2c54ff287cfc0a34f38a6b832ea1bd8e448a330b3e40a50859e6488bee07f22"
 
 [[package]]
 name = "bitflags"
@@ -658,10 +673,97 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
+name = "cfg"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a8327e1fda66185d40ec4169b861ee3c79fc78162d25514f90d8b589ba300ba"
+dependencies = [
+ "bit-matrix",
+ "bit-vec 0.7.0",
+ "cfg-classify",
+ "cfg-earley",
+ "cfg-generate",
+ "cfg-grammar",
+ "cfg-predict",
+ "cfg-sequence",
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-classify"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42e3687abb27fd23d794e9b058ca7f12c807d0e362469f428e62e1043439cba9"
+dependencies = [
+ "bit-matrix",
+ "bit-vec 0.7.0",
+ "cfg-grammar",
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-earley"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4b4c4941ea6fe5edb52e7aaa922af3b05d6d3bb9ba11b4deaa54f5c0fb67334"
+dependencies = [
+ "bit-matrix",
+ "cfg-classify",
+ "cfg-grammar",
+ "cfg-sequence",
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-generate"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "430d3dc05b50b40775e02368e07e50e83e32b9f38fdfeee73ba7b5527e291c2b"
+dependencies = [
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-grammar"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "973a96188797a40399157b6f89f536dea6690304fa15b032655cb3e39411237f"
+dependencies = [
+ "bit-vec 0.7.0",
+ "cfg-symbol",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "cfg-predict"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "120a96c6c1c78d28daf234d98c6b235698d1c9ba150758b7f577c06786c4e52e"
+dependencies = [
+ "cfg-grammar",
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-sequence"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83d725833a11fbece5aa6b8118cf0e69fbc024837abe8c571749f3113d017e77"
+dependencies = [
+ "cfg-grammar",
+ "cfg-symbol",
+]
+
+[[package]]
+name = "cfg-symbol"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97a00c99b50a3584312822b053283eea0dada2bb97a0e3178707f8c25afd5cd4"
 
 [[package]]
 name = "cfg_aliases"
@@ -2760,6 +2862,7 @@ dependencies = [
 name = "triglyceride"
 version = "0.1.0"
 dependencies = [
+ "cfg",
  "eframe",
  "egui",
  "egui_plot",
@@ -3151,7 +3254,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d50819ab545b867d8a454d1d756b90cd5f15da1f2943334ca314af10583c9d39"
 dependencies = [
  "arrayvec",
- "bit-vec",
+ "bit-vec 0.6.3",
  "bitflags 2.6.0",
  "cfg_aliases",
  "codespan-reporting",

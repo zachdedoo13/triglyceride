@@ -1,10 +1,10 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::ops::Add;
 
 use egui::{Context, Stroke, TextStyle, Window};
 use egui::{CollapsingHeader, Color32, DragValue, menu, ScrollArea, Ui};
 use egui_plot::{Bar, BarChart, Corner, Legend, Line, Plot, PlotPoint};
-use lazy_static::lazy_static;
-use rand::{random, Rng, SeedableRng, thread_rng};
+use rand::{Rng, SeedableRng, thread_rng};
 use rand::rngs::StdRng;
 
 use crate::profiler::PerformanceProfiler;
@@ -50,7 +50,7 @@ impl PerformanceProfiler {
 
             ui.menu_button("Settings", |ui| {
                ui.add(DragValue::new(&mut settings.update_interval_sec).speed(0.01).range(0.0..=f32::MAX).prefix("Data Update Interval -> ").suffix(" sec"));
-               ui.add(DragValue::new(&mut settings.stored_cash_amount).speed(0.1).range(1..=200).prefix("Data averaging cash -> "));
+               ui.add(DragValue::new(&mut settings.stored_cash_amount).speed(0.1).range(3..=200).prefix("Data averaging cash -> "));
                ui.add(DragValue::new(&mut settings.stored_data_amount).speed(0.5).range(1..=u32::MAX).prefix("stored datapoint's for graph -> "));
                ui.add(DragValue::new(&mut self.ui_data.graph_included_upper_ms).speed(1.0).range(0.0..=f64::MAX).prefix("Included upper milliseconds -> "));
                ui.add(DragValue::new(&mut settings.smoothing_amount).speed(0.1).range(0..=u32::MAX).prefix("Tree smoothing amount -> "));
@@ -60,8 +60,14 @@ impl PerformanceProfiler {
                self.ui_data.focused_profiles.clear();
             }
 
+            if ui.button("Colors").clicked() {
+               unsafe {
+                  OFFSET += 1;
+               }
+            }
+
             ui.menu_button("Help", |ui| {
-               ui.label("Imagine some helpfully words")
+               ui.label("Imagine some helpful words")
             });
 
             ui.horizontal(|ui| {
@@ -178,10 +184,9 @@ impl PerformanceProfiler {
                tot += d[1];
             } else { break 'iter; }
          }
-         
+
          tot / c as f64
       }
-      
    }
 
    fn recursive_tree(
@@ -356,14 +361,26 @@ fn bar_from_x_plus(x: f64, plus: f64, height: f64, name: StatString) -> Bar {
        )
 }
 
-lazy_static!(
-   static ref OFFSET: u64 = { let mut rng = thread_rng(); rng.gen_range(0..500) };
-);
+
+static mut OFFSET: u64 = 0;
 
 fn stat_hash(key: StatString) -> u64 {
    let mut hasher = DefaultHasher::new();
    key.hash(&mut hasher);
-   let hash = hasher.finish() + *OFFSET;
+   let mut hash = hasher.finish();
+
+   if hash > 102_001 {
+      hash -= 102_000;
+   };
+
+   hash += unsafe {
+      if OFFSET == 0 {
+         let mut rng = thread_rng();
+         OFFSET = rng.gen_range(0..100_000);
+      };
+
+      OFFSET
+   };
 
    hash
 }

@@ -30,7 +30,7 @@ impl Default for Settings {
 
 
 /// a data structure for all the collected data, created globally and accessed
-/// with ``get_profiler()``
+/// with ``open_profiler(&PROF, |mut p| {})``
 #[derive(Debug)]
 pub struct PerformanceProfiler {
    /// all timed functions ``HashMap<function, profile>``
@@ -86,10 +86,7 @@ impl PerformanceProfiler {
          outermost_lower: None,
       }
    }
-}
 
-/// time functions
-impl PerformanceProfiler {
    /// starts a profiler for a general function, use event loop variant for a function tree
    pub fn start_time_function(&mut self, name: StatString) {
       if !self.is_actually_active_or_not { return; }
@@ -122,10 +119,8 @@ impl PerformanceProfiler {
          }
       }
    }
-}
 
-/// new implementation
-impl PerformanceProfiler {
+   /// internal function
    fn at_outermost_upper(&mut self) {
       self.resolve_profiler(true);
 
@@ -215,9 +210,8 @@ impl PerformanceProfiler {
       }
    }
 
-
    /// sets a reference that is called every frame instead of an overarching function to start the tree
-   /// todo hacky
+   // todo hacky
    pub fn set_constant_reference(&mut self, name: StatString) {
       match self.inner_constant_reference {
          None => {
@@ -230,10 +224,8 @@ impl PerformanceProfiler {
 
       self.start_time_function(name);
    }
-}
 
-/// resolve functions
-impl PerformanceProfiler {
+   
    /// calculate averages, only runs every ``Settings::update_interval``
    pub fn resolve_profiler(&mut self, queue_tree: bool) {
       if self.is_actually_active_or_not != self.settings.active {
@@ -246,10 +238,11 @@ impl PerformanceProfiler {
       if self.is_actually_active_or_not { self.inner_resolve(queue_tree); }
    }
 
+   /// internal function
    fn inner_resolve(&mut self, queue_tree: bool) {
       self.ticks_since_start += 1;
       self.ticks_since_last_dump += 1;
-      
+
       if (self.last_dump.elapsed().as_secs_f64() > self.settings.update_interval_sec) && self.ticks_since_last_dump > 3 {
          self.ticks_since_last_dump = 0;
          self.last_dump = Instant::now();
@@ -265,13 +258,15 @@ impl PerformanceProfiler {
                   }
                }
             }
-            
+
          }
 
          self.queue_processes_tree = queue_tree;
       }
    }
+   
 }
+
 
 
 

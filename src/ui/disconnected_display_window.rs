@@ -5,7 +5,6 @@ use eframe::{EventLoopBuilder, Frame, UserEvent};
 use egui::{CentralPanel, Context};
 use crate::{open_profiler, PerformanceProfiler};
 
-// todo disable this on web
 pub fn spawn_disconnected_window(prof: &'static RwLock<PerformanceProfiler>) {
    println!("pre");
 
