@@ -39,8 +39,9 @@ pub fn time_event(attr: TokenStream, input: TokenStream) -> TokenStream {
         #(#fn_attar)*
         #fn_vis #fn_sig {
             triglyceride::open_profiler(&#profiler, |mut p| p.time_event_start(#name));
-            #fn_block
+            let a_name_for_veriable_that_proboly_wont_be_used = #fn_block;
             triglyceride::open_profiler(&#profiler, |mut p| p.time_event_end(#name));
+            a_name_for_veriable_that_proboly_wont_be_used
         }
     };
 
@@ -83,8 +84,9 @@ pub fn time_lone_function(attr: TokenStream, input: TokenStream) -> TokenStream 
         #(#fn_attar)*
         #fn_vis #fn_sig {
             triglyceride::open_profiler(&#profiler, |mut p| p.start_time_function(#name));
-            #fn_block
+            let a_name_for_veriable_that_proboly_wont_be_used = #fn_block;
             triglyceride::open_profiler(&#profiler, |mut p| p.end_time_function(#name));
+            a_name_for_veriable_that_proboly_wont_be_used
         }
     };
 

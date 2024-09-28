@@ -1,6 +1,6 @@
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-use egui::{Context, Stroke, TextStyle, Window};
+use egui::{Context, Stroke, TextStyle, WidgetText, Window};
 use egui::{CollapsingHeader, Color32, DragValue, menu, ScrollArea, Ui};
 use egui_plot::{Bar, BarChart, Corner, Legend, Line, Plot, PlotPoint};
 use rand::{Rng, SeedableRng, thread_rng};
@@ -131,11 +131,28 @@ impl PerformanceProfiler {
              });
       });
    }
+   
+   
+   fn name_string_to_text(&self, name: StatString, time: f64) -> WidgetText {
+      let mut t = WidgetText::from(format!("{name} => {}", show_time(time)));
+      
+      if self.ui_data.focused_profiles.contains(&name) {
+         t = t.underline();
+      };
+      
+      if let Some(n) = self.ui_data.last_hovered_profile_tree {
+         if n == name {
+            t = t.strong();
+         }
+      }
+      
+      t
+   }
 
    fn recursive_dropdown_of_children(&self, name: StatString, ui: &mut Ui) {
       let self_ms = self.all_profiles.get(name).unwrap().pull_latest();
       let children = &self.latest_tree.nodes.get(name).unwrap().children;
-      let text = format!("{name} => {}", show_time(self_ms));
+      let text = self.name_string_to_text(name, self_ms);
       match children.is_empty() {
          true => { ui.label(text); }
          false => {
