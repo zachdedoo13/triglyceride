@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "local crates are a pain in the ass"
 license = "MIT"
+repository = "https://github.com/zachdedoo13/triglyceride"
 
 [lib]
 proc-macro = true
