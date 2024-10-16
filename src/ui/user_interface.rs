@@ -72,7 +72,12 @@ impl PerformanceProfiler {
             ui.horizontal(|ui| {
                ui.add(ToggleSwitch::new(&mut self.ui_data.zoom_graph));
                ui.label("Zoom Graph")
-            })
+            });
+            
+            if let Some(root) = self.latest_tree.root {
+               ui.label(format!("Overall => {:.2}fps", 1.0 / (self.all_profiles[root].pull_latest() / 1000.0) ));
+            }
+            
          });
       });
    }
@@ -121,7 +126,7 @@ impl PerformanceProfiler {
    pub fn list_all_functions(&mut self, ui: &mut Ui) {
       ui.group(|ui| {
          ScrollArea::vertical()
-             .id_source("List all functions")
+             .id_salt("List all functions")
              .show(ui, |ui| {
                 for (name, profile) in self.all_profiles.iter() {
                    ui.horizontal(|ui| {
@@ -156,7 +161,7 @@ impl PerformanceProfiler {
       match children.is_empty() {
          true => { ui.label(text); }
          false => {
-            CollapsingHeader::new(text).id_source(name).show(ui, |ui| {
+            CollapsingHeader::new(text).id_salt(name).show(ui, |ui| {
                let mut child_tot = 0.0;
                for child in children.iter() {
                   self.recursive_dropdown_of_children(child, ui);
@@ -171,7 +176,7 @@ impl PerformanceProfiler {
       ui.group(|ui| {
          ScrollArea::vertical()
              .auto_shrink([true, true])
-             .id_source("Simple dropdown")
+             .id_salt("Simple dropdown")
              .show(ui, |ui| {
                 match self.latest_tree.root {
                    None => { ui.label("No root node detected"); }
