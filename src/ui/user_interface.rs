@@ -123,6 +123,7 @@ impl PerformanceProfiler {
 
 /// lists
 impl PerformanceProfiler {
+   #[allow(dead_code)]
    pub fn list_all_functions(&mut self, ui: &mut Ui) {
       ui.group(|ui| {
          ScrollArea::vertical()
