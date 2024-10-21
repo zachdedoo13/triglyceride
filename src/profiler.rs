@@ -7,33 +7,26 @@ use crate::StatString;
 use crate::ui::user_interface::UiData;
 use crate::utils::tree::Tree;
 
-#[derive(Debug)]
-pub struct Settings {
-   pub active: bool,
-   pub stored_data_amount: u32,
-   pub stored_cash_amount: u32,
-   pub update_interval_sec: f64,
-   pub smoothing_amount: u32
-}
+use lazy_bastard::lazy_bastard;
 
-impl Default for Settings {
-   fn default() -> Self {
-      Self {
-         active: true,
-         stored_data_amount: 50,
-         stored_cash_amount: 20,
-         update_interval_sec: 0.5,
-         smoothing_amount: 5,
-      }
+
+lazy_bastard!(
+   #[derive(Debug)]
+   pub struct Settings {
+      pub active: bool => true,
+      pub stored_data_amount: u32 => 50,
+      pub stored_cash_amount: u32 => 20,
+      pub update_interval_sec: f64 => 0.5,
+      pub smoothing_amount: u32 => 5,
    }
-}
+);
 
 
 /// a data structure for all the collected data, created globally and accessed
 /// with ``open_profiler(&PROF, |mut p| {})``
 #[derive(Debug)]
 pub struct PerformanceProfiler {
-   /// all timed functions ``HashMap<function, profile>``
+   /// all timed functions ``HashMap<function_name, profile>``
    pub all_profiles: HashMap<StatString, FunctionProfile>,
 
    /// profiler settings

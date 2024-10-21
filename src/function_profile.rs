@@ -44,9 +44,7 @@ impl FunctionProfile {
 
       let ave: f64 = self.average_cash.iter().sum::<f64>() / self.average_cash.len() as f64;
 
-      self.timings.push(
-         [counter as f64, ave]
-      );
+      self.timings.push([counter as f64, ave]);
 
       let diff = self.timings.len() as i32 - stored_data_amount as i32;
       if diff > 0 { self.timings.drain(0..(diff as usize)); }

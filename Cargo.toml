@@ -25,6 +25,8 @@ rand = { version = "0.8.5", features = ["std_rng"] }
 
 tri_macros = { path = "tri_macros", version = "0.1.0" }
 
+lazy_bastard = "0.1.6"
+
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit = { version = "0.30.5", features = [] }
