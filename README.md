@@ -17,3 +17,6 @@ used to monitor the perfomance of singlethreaded, event loop based applications
 ## Benifits
 - diognose bugs and bottlenecks in an intuitive way
 - add cool looking perfomance statictics to you app to make it feel cooler wist provideing no tangable benifit 
+
+## Extra 
+- do whatever you whant with the code, some of its good, some of its not, controbutions are welcome
