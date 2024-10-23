@@ -45,7 +45,7 @@ fn test(ui: &mut Ui, data: Vec<(u32, [f32; 2])>) {
    // setup
    let target_size = ui.available_size();
 
-   let (widget_rect, mut responce) = ui.allocate_exact_size(target_size, egui::Sense {
+   let (widget_rect, mut _response) = ui.allocate_exact_size(target_size, egui::Sense {
       click: true,
       drag: true,
       focusable: true,
