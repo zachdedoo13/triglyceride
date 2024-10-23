@@ -1,6 +1,7 @@
 # Trigyceride
 ##### named arfter the tree lick structure of a Trigyceride molocule, trust me it makes sence
 
+### todo!() insert cool lookin picture hear
 
 ## Overview
 used to monitor the perfomance of singlethreaded, event loop based applications
