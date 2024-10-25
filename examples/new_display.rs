@@ -1,6 +1,10 @@
 use eframe::{App, Frame, NativeOptions};
-use eframe::epaint::{Rect};
+use eframe::epaint::Rect;
 use egui::{Align2, Color32, Context, FontId, Painter, Pos2, Response, Rounding, Sense, Stroke, TextBuffer, Ui, Vec2, Window};
+
+use triglyceride::{open_profiler, Settings, time_event, time_event_mac};
+use triglyceride::init_profiler;
+use triglyceride::ui::user_interface::GenericTreeBarThing;
 
 fn main() {
    let options = NativeOptions {
@@ -10,19 +14,19 @@ fn main() {
    eframe::run_native(
       "NewDisplay",
       options,
-      Box::new(|_cc| Ok(Box::new(MyApp::new()))),
+      Box::new(|_cc| Ok(Box::new(TestTreePass::new()))),
    ).expect("Failed to run");
 }
 
-pub struct MyApp {}
-impl MyApp {
+pub struct TestSegment {}
+impl TestSegment {
    pub fn new() -> Self {
       Self {}
    }
 }
-impl App for MyApp {
+impl App for TestSegment {
    fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-      Window::new("test")
+      Window::new("data")
           .resizable(true)
           .show(ctx, |ui| {
              ui.label("Balls");
@@ -34,10 +38,9 @@ impl App for MyApp {
                 let data = vec![(0, [0.0, 250.0]), (1, [0.0, 150.0]), (1, [170.0, 200.0])];
                 test(ui, data);
              });
-
           });
 
-      Window::new("")
+      Window::new("segment")
           .resizable(true)
           .min_size(Vec2::ZERO)
           .default_size(Vec2::new(200.0, 100.0))
@@ -45,8 +48,43 @@ impl App for MyApp {
              ui.allocate_space(ui.available_size());
 
              let _resp = display_segment(ui, ui.max_rect(), "MAIN_UPDATE_INTERLOOP", 32.4, Color32::DARK_GRAY);
+
+             let points = [Pos2::new(ui.min_rect().center().x, ui.min_rect().min.y), Pos2::new(ui.min_rect().center().x, ui.min_rect().max.y)];
+             draw_divider_line(ui, points);
           });
    }
+}
+
+init_profiler!(PROF, Settings::default());
+
+pub struct TestTreePass;
+impl TestTreePass {
+   pub fn new() -> Self {
+      Self {}
+   }
+}
+impl App for TestTreePass {
+   #[time_event(PROF, "Main update interloop")]
+   fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+      time_event_mac!(PROF, "DISPLAY_OLD", {
+         open_profiler(&PROF, |mut p| {
+            p.display_floating_window(ctx);
+         });
+      });
+
+
+      Window::new("test")
+          .resizable(true)
+          .show(ctx, |ui| {
+             open_profiler(&PROF, |mut p| {
+
+             });
+          });
+   }
+}
+
+pub fn display_new_tree(ui: &mut Ui, generic_tree_bar_thing: &GenericTreeBarThing) {
+   // let depth
 }
 
 const MAX_SEGMENTS: u32 = 6;
@@ -73,24 +111,8 @@ fn test(ui: &mut Ui, data: Vec<(u32, [f32; 2])>) {
 
       let segmentation = widget_rect.height() / MAX_SEGMENTS as f32;
 
-      // painter.rect(
-      //    Rect { min: Pos2::new(rect.min.x, lower_y + segmentation), max: Pos2::new(rect.max.x, rect.max.y) },
-      //    Rounding::same(5.0),
-      //    Color32::GRAY,
-      //    Stroke::new(2.5, Color32::GOLD),
-      // );
-
-      // compass(painter, &rect);
-
       for prof in data.iter() {
          let data_rect = rect_from_seg_x(prof.1[0], prof.1[1], prof.0, segmentation, rect);
-
-         // painter.rect(
-         //    data_rect,
-         //    Rounding::same(5.0),
-         //    Color32::DARK_GRAY,
-         //    Stroke::new(1.0, Color32::GOLD),
-         // );
 
          display_segment(ui, data_rect, "TEST_NAME_PLACEHOLDER", 4.23, Color32::DARK_GRAY);
       }
@@ -121,17 +143,24 @@ fn compass(painter: &Painter, rect: &Rect) {
    painter.circle(rect.center() + Vec2::new(25.0, 0.0), 5.0, Color32::BROWN, Stroke::default());
 }
 
+fn segment_height(ui: &mut Ui) -> f32 {
+   let one_char_size = ui.painter().layout_no_wrap("P".to_string(), FONT, Color32::PLACEHOLDER).size();
+   one_char_size.y + HEIGHT_BUFFER
+}
+
 
 // display
 const ROUNDING: f32 = 5.0;
 const STROKE_THICKNESS: f32 = 1.0;
 const STROKE_COLOR: Color32 = Color32::GOLD;
 const HEIGHT_BUFFER: f32 = 10.0;
+const WIDTH_SHRINKAGE: f32 = 5.0;
 
 // formating
+const FONT: FontId = FontId::monospace(TEXT_SIZE);
 const DOT_COUNT: usize = 2;
 const MS_SPACING: usize = 2;
-const LEFT_BUFFER: f32 = 5.0;
+const LEFT_BUFFER: f32 = 7.5;
 const TEXT_SIZE: f32 = 12.5;
 fn display_segment(
    ui: &mut Ui,
@@ -142,24 +171,11 @@ fn display_segment(
 ) -> Response
 {
    // setup
-   let font = FontId::monospace(TEXT_SIZE);
-   let one_char_size = ui.painter().layout_no_wrap("P".to_string(), font.clone(), Color32::PLACEHOLDER).size();
+   let one_char_size = ui.painter().layout_no_wrap("P".to_string(), FONT, Color32::PLACEHOLDER).size();
 
    // format container
-   let mut con_rect = rect;
-   let tgt_height = one_char_size.y + HEIGHT_BUFFER;
-   let diff = tgt_height - con_rect.height();
-   if diff < 0.0 {
-      con_rect = con_rect.shrink2(Vec2::new(0.0, diff.abs() / 2.0));
-   }
-
-   // draw container
-   ui.painter().rect(
-      con_rect,
-     Rounding::same(ROUNDING),
-     color,
-     Stroke::new(STROKE_THICKNESS, STROKE_COLOR),
-   );
+   let con_rect = Rect::from_center_size(rect.center(), Vec2::new(rect.width(), segment_height(ui)))
+       .shrink2(Vec2::new(WIDTH_SHRINKAGE, 0.0));
 
    // input
    let response = ui.allocate_rect(con_rect.shrink(1.0), Sense {
@@ -168,9 +184,23 @@ fn display_segment(
       focusable: true,
    });
 
+   // draw container
+   let col = if response.hovered() {
+      color.gamma_multiply(1.5)
+   } else {
+      color
+   };
+
+   ui.painter().rect(
+      con_rect,
+      Rounding::same(ROUNDING),
+      col,
+      Stroke::new(STROKE_THICKNESS, STROKE_COLOR),
+   );
+
    // concat text
    let one_char_width = one_char_size.x;
-   let size = ui.painter().layout_no_wrap(name.to_string(), font.clone(), Color32::PLACEHOLDER).size();
+   let size = ui.painter().layout_no_wrap(name.to_string(), FONT, Color32::PLACEHOLDER).size();
 
    let max_size = (size.x + LEFT_BUFFER) + (one_char_width * MS_SPACING as f32) + (one_char_width * ((time_ms as u32).to_string().len() + 5) as f32);
 
@@ -181,15 +211,13 @@ fn display_segment(
       let mut txt = name.to_string();
       if txt.len() < char_diff {
          txt.clear();
-      }
-      else {
+      } else {
          txt.drain((txt.len() - char_diff)..txt.len());
          txt.push_str(".".repeat(DOT_COUNT).as_str());
          txt.push_str(" ".repeat(MS_SPACING).as_str());
       }
       txt
-   }
-   else {
+   } else {
       let mut txt = name.to_string();
       txt.push_str(" ".repeat(MS_SPACING).as_str());
       txt
@@ -197,6 +225,7 @@ fn display_segment(
 
    sized_text.push_str(format!("{time_ms:.2}ms").as_str());
 
+   // TODO ass, switch to printing the elapsed on the far right
    if ((sized_text.len() as f32 * one_char_width) + LEFT_BUFFER) > rect.width() {
       sized_text = format!("{time_ms:.1}ms");
    }
@@ -211,7 +240,13 @@ fn display_segment(
    }
 
    // draw text
-   ui.painter().text(Pos2::new(rect.min.x + LEFT_BUFFER, rect.center().y), Align2::LEFT_CENTER, sized_text, font, Color32::WHITE);
+   ui.painter().text(Pos2::new(rect.min.x + LEFT_BUFFER, rect.center().y), Align2::LEFT_CENTER, sized_text, FONT, Color32::WHITE);
 
    response
+}
+
+
+const LINE_STROKE: Stroke = Stroke { width: 1.0, color: Color32::GRAY };
+fn draw_divider_line(ui: &mut Ui, points: [Pos2; 2]) {
+   ui.painter().line_segment(points, LINE_STROKE);
 }

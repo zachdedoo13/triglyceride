@@ -204,7 +204,7 @@ impl PerformanceProfiler {
    }
 
    /// sets a reference that is called every frame instead of an overarching function to start the tree
-   // todo hacky
+   // TODO hacky
    pub fn set_constant_reference(&mut self, name: StatString) {
       match self.inner_constant_reference {
          None => {

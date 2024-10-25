@@ -73,11 +73,10 @@ impl PerformanceProfiler {
                ui.add(ToggleSwitch::new(&mut self.ui_data.zoom_graph));
                ui.label("Zoom Graph")
             });
-            
+
             if let Some(root) = self.latest_tree.root {
-               ui.label(format!("Overall => {:.2}fps", 1.0 / (self.all_profiles[root].pull_latest() / 1000.0) ));
+               ui.label(format!("Overall => {:.2}fps", 1.0 / (self.all_profiles[root].pull_latest() / 1000.0)));
             }
-            
          });
       });
    }
@@ -137,21 +136,21 @@ impl PerformanceProfiler {
              });
       });
    }
-   
-   
+
+
    fn name_string_to_text(&self, name: StatString, time: f64) -> WidgetText {
       let mut t = WidgetText::from(format!("{name} => {}", show_time(time)));
-      
+
       if self.ui_data.focused_profiles.contains(&name) {
          t = t.underline();
       };
-      
+
       if let Some(n) = self.ui_data.last_hovered_profile_tree {
          if n == name {
             t = t.strong();
          }
       }
-      
+
       t
    }
 
@@ -211,66 +210,166 @@ impl PerformanceProfiler {
       }
    }
 
-   fn recursive_tree(
+   // fn recursive_tree(
+   //    &self,
+   //    bars: &mut (Vec<Bar>, Vec<StatString>),
+   //    node: StatString,
+   //    depth: usize,
+   //    start_from: f64,
+   //    max: f64,
+   //    farthest_depth: &mut usize,
+   // )
+   // {
+   //    if depth > *farthest_depth {
+   //       *farthest_depth = depth;
+   //    };
+   //
+   //    let node_children = &self.latest_tree.nodes.get(node).unwrap().children;
+   //    let data = self.pull_data(node) / max;
+   //
+   //    bars.0.push(
+   //       bar_from_x_plus(start_from, data, depth as f64, node)
+   //    );
+   //
+   //    bars.1.push(node);
+   //
+   //    if !node_children.is_empty() {
+   //       let mut rcs = start_from;
+   //       for child in node_children.iter() {
+   //          self.recursive_tree(bars, child, depth + 1, rcs, max, farthest_depth);
+   //          rcs += self.pull_data(child) / max;
+   //       }
+   //    }
+   // }
+
+   /// plots a horizontal (vertical breaks the math for now) barchart, tracks what's hovered / selected in ``self.ui_data``
+   pub fn tree_bar_chart(&mut self, ui: &mut Ui) {
+      // let mut bars: (Vec<Bar>, Vec<StatString>) = (vec![], vec![]);
+      //
+      // // generate graph
+      // let mut _farthest_depth = 0;
+      // if let Some(root) = self.latest_tree.root {
+      //    let max = self.pull_data(root);
+      //
+      //    self.recursive_tree(&mut bars, root, 0, 0.0, max, &mut _farthest_depth);
+      // }
+      //
+      // let plot = Plot::new("FunctionTree")
+      //     .show_grid([false, false])
+      //     .show_axes([true, false])
+      //     .allow_scroll(false)
+      //     .allow_boxed_zoom(false)
+      //     .allow_drag(false);
+      //
+      // let barchart = BarChart::new(bars.0.clone());
+      // plot.show(ui, |plot_ui| {
+      //    plot_ui.bar_chart(barchart);
+      //
+      //    self.ui_data.last_hovered_profile_tree = None;
+      //
+      //    if let Some(pos) = plot_ui.pointer_coordinate() {
+      //       for (i, bar) in bars.0.iter().enumerate() {
+      //          if aabb_collision_check(pos, gen_aabb(bar)) {
+      //             let n = bars.1[i];
+      //             if plot_ui.response().clicked() {
+      //                if let Some(index) = self.ui_data.focused_profiles.iter().position(|x| *x == n) {
+      //                   self.ui_data.focused_profiles.remove(index);
+      //                } else {
+      //                   self.ui_data.focused_profiles.push(n);
+      //                }
+      //             } else {
+      //                self.ui_data.last_hovered_profile_tree = Some(n);
+      //             }
+      //          }
+      //       }
+      //    }
+      // });
+
+
+
+      if let Some(root) = self.latest_tree.root {
+         let tree = self.generate_generic_tree_bars(root);
+         self.display_egui_plot_of_generic_tree_bars(ui, &tree);
+      }
+   }
+
+   fn generic_recursive_tree(
       &self,
-      bars: &mut (Vec<Bar>, Vec<StatString>),
+      tree: &mut GenericTreeBarThing,
       node: StatString,
       depth: usize,
       start_from: f64,
-      max: f64,
       farthest_depth: &mut usize,
-   ) {
+   )
+   {
       if depth > *farthest_depth {
          *farthest_depth = depth;
       };
 
       let node_children = &self.latest_tree.nodes.get(node).unwrap().children;
-      let data = self.pull_data(node) / max;
+      let data = self.pull_data(node);
 
-      bars.0.push(
-         bar_from_x_plus(start_from, data, depth as f64, node)
-      );
-
-      bars.1.push(node);
+      tree.push(depth, LoneBar {
+         name: node,
+         time: data,
+         positions: [start_from, data],
+      });
 
       if !node_children.is_empty() {
          let mut rcs = start_from;
          for child in node_children.iter() {
-            self.recursive_tree(bars, child, depth + 1, rcs, max, farthest_depth);
-            rcs += self.pull_data(child) / max;
+            self.generic_recursive_tree(tree, child, depth + 1, rcs, farthest_depth);
+            rcs += self.pull_data(child);
          }
       }
    }
 
-   /// plots a horizontal (vertical breaks the math for now) barchart, tracks what's hovered / selected in ``self.ui_data``
-   pub fn tree_bar_chart(&mut self, ui: &mut Ui) {
-      let mut bars: (Vec<Bar>, Vec<StatString>) = (vec![], vec![]);
+   pub fn generate_generic_tree_bars(&self, root: StatString) -> GenericTreeBarThing {
+      let mut tree = GenericTreeBarThing::new();
 
-      // generate graph
-      let mut _farthest_depth = 0;
-      if let Some(root) = self.latest_tree.root {
-         let max = self.pull_data(root);
+      // needed ?
+      let mut farthest_depth = 0;
 
-         self.recursive_tree(&mut bars, root, 0, 0.0, max, &mut _farthest_depth);
+      self.generic_recursive_tree(
+         &mut tree,
+         root,
+         0,
+         0.0,
+         &mut farthest_depth,
+      );
+
+      tree
+   }
+
+   pub fn display_egui_plot_of_generic_tree_bars(&mut self, ui: &mut Ui, tree: &GenericTreeBarThing) {
+      let mut names = vec![];
+      let mut bars = vec![];
+
+      for (depth, layer) in tree.layers.iter().enumerate() {
+         for bar in layer.iter() {
+            bars.push(
+               bar_from_x_plus(bar.positions[0], bar.positions[1], depth as f64, bar.name)
+            );
+            names.push(bar.name);
+         }
       }
 
-      let plot = Plot::new("FunctionTree")
+      let plot = Plot::new("Function tree")
           .show_grid([false, false])
           .show_axes([true, false])
           .allow_scroll(false)
           .allow_boxed_zoom(false)
           .allow_drag(false);
 
-      let barchart = BarChart::new(bars.0.clone());
+      let barchart = BarChart::new(bars.clone());
       plot.show(ui, |plot_ui| {
          plot_ui.bar_chart(barchart);
-
          self.ui_data.last_hovered_profile_tree = None;
 
          if let Some(pos) = plot_ui.pointer_coordinate() {
-            for (i, bar) in bars.0.iter().enumerate() {
+            for (i, bar) in bars.iter().enumerate() {
                if aabb_collision_check(pos, gen_aabb(bar)) {
-                  let n = bars.1[i];
+                  let n = names[i];
                   if plot_ui.response().clicked() {
                      if let Some(index) = self.ui_data.focused_profiles.iter().position(|x| *x == n) {
                         self.ui_data.focused_profiles.remove(index);
@@ -284,6 +383,54 @@ impl PerformanceProfiler {
             }
          }
       });
+   }
+}
+
+#[derive(Debug)]
+pub struct LoneBar {
+   pub name: StatString,
+   pub time: f64,
+   pub positions: [f64; 2],
+}
+#[derive(Debug)]
+pub struct GenericTreeBarThing {
+   layers: Vec<Vec<LoneBar>>,
+}
+impl GenericTreeBarThing {
+   pub fn new() -> Self {
+      Self {
+         layers: vec![],
+      }
+   }
+
+   pub fn push(&mut self, layer: usize, data: LoneBar) {
+      if self.layers.len() < layer + 1 {
+         self.layers.push(vec![]);
+         self.push(layer, data);
+         return;
+      }
+
+      self.layers[layer].push(data);
+   }
+
+   pub fn sort_by_lowest_first(&mut self) {
+      todo!()
+   }
+
+   pub fn normalize(&mut self) -> Option<()> {
+      if self.layers.is_empty() { return None; }
+      if self.layers[0].len() > 1 { return None; }
+
+      let reference = self.layers[0][0].time;
+
+      for layer in self.layers.iter_mut() {
+         for bar in layer.iter_mut() {
+            bar.positions[0] /= reference;
+            bar.positions[1] /= reference;
+         }
+      }
+
+      Some(())
    }
 }
 
