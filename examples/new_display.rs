@@ -1,3 +1,5 @@
+use std::thread::sleep;
+use std::time::Duration;
 use eframe::{App, Frame, NativeOptions};
 use eframe::epaint::Rect;
 use egui::{Align2, Color32, Context, FontId, Painter, Pos2, Response, Rounding, Sense, Stroke, TextBuffer, Ui, Vec2, Window};
@@ -65,26 +67,81 @@ impl TestTreePass {
 }
 impl App for TestTreePass {
    #[time_event(PROF, "Main update interloop")]
-   fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+   fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
       time_event_mac!(PROF, "DISPLAY_OLD", {
          open_profiler(&PROF, |mut p| {
             p.display_floating_window(ctx);
          });
       });
 
+      time_event_mac!(PROF, "TEST", {
+         sleep(Duration::from_millis(1));
+         time_event_mac!(PROF, "TEST_D2", {
+            sleep(Duration::from_millis(1));
+         });
+      });
 
-      Window::new("test")
-          .resizable(true)
-          .show(ctx, |ui| {
-             open_profiler(&PROF, |mut p| {
-
+      time_event_mac!(PROF, "DISPLAY_NEW_PLACEHOLDER", {
+         Window::new("test")
+             .resizable(true)
+             .show(ctx, |ui| {
+                open_profiler(&PROF, |mut p| {
+                   if let Some(root) = p.latest_tree.root {
+                      let mut tree = p.generate_generic_tree_bars(root);
+                      display_new_tree(ui, &mut tree);
+                   }
+                });
              });
-          });
+      });
+
+      ctx.request_repaint();
    }
 }
 
-pub fn display_new_tree(ui: &mut Ui, generic_tree_bar_thing: &GenericTreeBarThing) {
-   // let depth
+pub fn display_new_tree(ui: &mut Ui, generic_tree_bar_thing: &mut GenericTreeBarThing) {
+   // setup
+   let target_size = ui.available_size();
+
+   let (widget_rect, mut _response) = ui.allocate_exact_size(target_size, egui::Sense {
+      click: true,
+      drag: true,
+      focusable: true,
+   });
+
+   // draw
+   generic_tree_bar_thing.normalize();
+   generic_tree_bar_thing.sort_layers();
+   let depth = generic_tree_bar_thing.layers.len();
+
+   if ui.is_rect_visible(widget_rect) {
+      let _visuals = ui.style().noninteractive();
+      let rect = widget_rect.expand(1.0);
+
+      let segmentation = widget_rect.height() / depth as f32;
+
+      for (depth, layer) in generic_tree_bar_thing.layers.iter().enumerate() {
+         for bar in layer.iter() {
+
+            let bar_rect = rect_from_seg_x(
+               bar.positions[0] as f32 * rect.width(),
+               (bar.positions[0] + bar.positions[1]) as f32 * rect.width(),
+               depth as u32,
+               segmentation,
+               rect,
+            );
+
+            println!("{}  |  {bar_rect}, bar => {bar:?}", bar.name);
+
+            display_segment(
+               ui,
+               bar_rect,
+               bar.name,
+               bar.time as f32,
+               Color32::DARK_GRAY,
+            );
+         }
+      }
+   }
 }
 
 const MAX_SEGMENTS: u32 = 6;
@@ -106,7 +163,6 @@ fn test(ui: &mut Ui, data: Vec<(u32, [f32; 2])>) {
 
    if ui.is_rect_visible(widget_rect) {
       let _visuals = ui.style().noninteractive();
-      let painter = ui.painter();
       let rect = widget_rect.expand(1.0);
 
       let segmentation = widget_rect.height() / MAX_SEGMENTS as f32;

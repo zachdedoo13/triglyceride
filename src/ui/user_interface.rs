@@ -394,7 +394,7 @@ pub struct LoneBar {
 }
 #[derive(Debug)]
 pub struct GenericTreeBarThing {
-   layers: Vec<Vec<LoneBar>>,
+   pub layers: Vec<Vec<LoneBar>>,
 }
 impl GenericTreeBarThing {
    pub fn new() -> Self {
@@ -413,8 +413,12 @@ impl GenericTreeBarThing {
       self.layers[layer].push(data);
    }
 
-   pub fn sort_by_lowest_first(&mut self) {
-      todo!()
+   pub fn sort_layers(&mut self) {
+      for layer in self.layers.iter_mut() {
+         layer.sort_by(|one, two| {
+            one.positions[0].total_cmp(&two.positions[0])
+         });
+      }
    }
 
    pub fn normalize(&mut self) -> Option<()> {
