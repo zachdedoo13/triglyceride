@@ -18,6 +18,8 @@ pub(crate) mod utils {
 }
 pub mod ui {
    pub mod user_interface;
+
+   pub mod new_display;
    
    #[cfg(not(target_arch = "wasm32"))]
    pub(crate) mod disconnected_display_window;

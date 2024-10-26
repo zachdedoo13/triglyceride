@@ -20,6 +20,7 @@ pub struct UiData {
    pub graph_included_upper_ms: f64,
    pub graph_included_upper_fps: f64,
    pub zoom_graph: bool,
+   pub use_new_tree: bool,
 }
 impl Default for UiData {
    fn default() -> Self {
@@ -30,6 +31,7 @@ impl Default for UiData {
          graph_included_upper_ms: 0.0,
          graph_included_upper_fps: 0.0,
          zoom_graph: false,
+         use_new_tree: true,
       }
    }
 }
@@ -53,6 +55,7 @@ impl PerformanceProfiler {
                ui.add(DragValue::new(&mut settings.stored_data_amount).speed(0.5).range(1..=u32::MAX).prefix("stored datapoint's for graph -> "));
                ui.add(DragValue::new(&mut self.ui_data.graph_included_upper_ms).speed(1.0).range(0.0..=f64::MAX).prefix("Included upper milliseconds -> "));
                ui.add(DragValue::new(&mut settings.smoothing_amount).speed(0.1).range(0..=u32::MAX).prefix("Tree smoothing amount -> "));
+               ui.checkbox(&mut self.ui_data.use_new_tree, "Use New Tree");
             });
 
             if ui.button("Clear").clicked() {
@@ -92,7 +95,7 @@ impl PerformanceProfiler {
 
       ui.vertical(|ui| {
          ui.horizontal(|ui| {
-            ui.set_min_height(hw * 0.7);
+            ui.set_min_height(hw * 0.75);
 
             ui.group(|ui| {
                ui.set_max_width(mw * 0.25);
@@ -106,7 +109,18 @@ impl PerformanceProfiler {
          });
 
          ui.group(|ui| {
-            self.tree_bar_chart(ui);
+            match self.ui_data.use_new_tree {
+               true => {
+                  if let Some(root) = self.latest_tree.root {
+                     let mut tree = self.generate_generic_tree_bars(root);
+                     self.display_new_tree(ui, &mut tree);
+                  }
+               }
+               false => {
+                  self.tree_bar_chart(ui);
+               }
+            }
+
          });
       });
    }
@@ -209,38 +223,6 @@ impl PerformanceProfiler {
          tot / c as f64
       }
    }
-
-   // fn recursive_tree(
-   //    &self,
-   //    bars: &mut (Vec<Bar>, Vec<StatString>),
-   //    node: StatString,
-   //    depth: usize,
-   //    start_from: f64,
-   //    max: f64,
-   //    farthest_depth: &mut usize,
-   // )
-   // {
-   //    if depth > *farthest_depth {
-   //       *farthest_depth = depth;
-   //    };
-   //
-   //    let node_children = &self.latest_tree.nodes.get(node).unwrap().children;
-   //    let data = self.pull_data(node) / max;
-   //
-   //    bars.0.push(
-   //       bar_from_x_plus(start_from, data, depth as f64, node)
-   //    );
-   //
-   //    bars.1.push(node);
-   //
-   //    if !node_children.is_empty() {
-   //       let mut rcs = start_from;
-   //       for child in node_children.iter() {
-   //          self.recursive_tree(bars, child, depth + 1, rcs, max, farthest_depth);
-   //          rcs += self.pull_data(child) / max;
-   //       }
-   //    }
-   // }
 
    /// plots a horizontal (vertical breaks the math for now) barchart, tracks what's hovered / selected in ``self.ui_data``
    pub fn tree_bar_chart(&mut self, ui: &mut Ui) {
@@ -567,7 +549,7 @@ fn convert_to_color32(color_array: [f64; 4]) -> Color32 {
    Color32::from_rgba_unmultiplied(r, g, b, a)
 }
 
-fn rand_color(key: StatString) -> Color32 {
+pub fn rand_color(key: StatString) -> Color32 {
    let hash = stat_hash(key);
    let mut rng = StdRng::seed_from_u64(hash);
 
