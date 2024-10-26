@@ -23,6 +23,13 @@ fn main() {
 
       time_event_mac!(PROF, "DISCONNECTED", {
          // std::thread::sleep(std::time::Duration::from_millis(30));
+
+         time_event_mac!(PROF, "YEENS_INVERSION", {
+            time_event_mac!(PROF, "T1_INVERSION", {
+               // std::thread::sleep(std::time::Duration::from_millis(70));
+               test();
+            });
+         });
       });
 
       open_profiler(&PROF, |mut p| p.set_constant_reference("MAIN"));
